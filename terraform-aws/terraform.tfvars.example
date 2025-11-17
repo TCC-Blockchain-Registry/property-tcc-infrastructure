@@ -1,0 +1,47 @@
+# Example Terraform Variables
+# Copy this file to terraform.tfvars and customize for your deployment
+
+# Project Configuration
+aws_region = "us-east-1"
+project_name = "property-tcc"
+environment = "demo"
+availability_zones = ["us-east-1a", "us-east-1b"]
+
+# Database Configuration
+db_instance_class = "db.t4g.micro"  # Free Tier eligible
+db_allocated_storage = 20
+# db_password = "CHANGE_ME_STRONG_PASSWORD"  # Optional: auto-generated if not set
+
+# Task Sizes (CPU and Memory)
+# Frontend
+frontend_cpu = 256     # 0.25 vCPU
+frontend_memory = 512  # 512 MB
+
+# BFF Gateway
+bff_cpu = 256
+bff_memory = 512
+
+# Orchestrator
+orchestrator_cpu = 512     # 0.5 vCPU
+orchestrator_memory = 1024 # 1 GB
+
+# Offchain API
+offchain_cpu = 512
+offchain_memory = 1024
+
+# Queue Worker
+worker_cpu = 256
+worker_memory = 512
+
+# Besu Validators
+besu_cpu = 1024    # 1 vCPU
+besu_memory = 2048 # 2 GB
+
+# Desired Task Counts (Clustering)
+frontend_desired_count = 2      # 2 tasks for high availability
+bff_desired_count = 2          # 2 tasks (clustered across AZs)
+orchestrator_desired_count = 2  # 2 tasks (clustered across AZs)
+offchain_desired_count = 2      # 2 tasks for high availability
+worker_desired_count = 1        # 1 task (single consumer)
+
+# Note: Besu validators are always 4 (1 per validator, 2 per AZ)

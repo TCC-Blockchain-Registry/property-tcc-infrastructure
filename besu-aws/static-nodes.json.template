@@ -1,0 +1,6 @@
+[
+  "enode://NODE1_PUBKEY@property-tcc-besu-validator-1.property-tcc.local:30303",
+  "enode://NODE2_PUBKEY@property-tcc-besu-validator-2.property-tcc.local:30304",
+  "enode://NODE3_PUBKEY@property-tcc-besu-validator-3.property-tcc.local:30305",
+  "enode://NODE4_PUBKEY@property-tcc-besu-validator-4.property-tcc.local:30306"
+]

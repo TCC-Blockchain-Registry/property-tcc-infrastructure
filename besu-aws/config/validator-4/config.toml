@@ -1,0 +1,42 @@
+# Besu Validator 4 Configuration (us-east-1b)
+
+# Data directory
+data-path="/opt/besu/data"
+
+# Genesis file
+genesis-file="/opt/besu/genesis.json"
+
+# Network settings
+network-id=1337
+p2p-host="0.0.0.0"
+p2p-port=30306
+max-peers=25
+
+# RPC settings
+rpc-http-enabled=true
+rpc-http-host="0.0.0.0"
+rpc-http-port=8548
+rpc-http-api=["ETH","NET","WEB3","ADMIN","DEBUG","TXPOOL"]
+rpc-http-cors-origins=["*"]
+
+# WebSocket settings
+rpc-ws-enabled=true
+rpc-ws-host="0.0.0.0"
+rpc-ws-port=8549
+rpc-ws-api=["ETH","NET","WEB3"]
+
+# Mining (validator)
+miner-enabled=true
+miner-coinbase="0x48d0f34e5078d585af0576479549be3949681472"
+
+# Static nodes
+static-nodes-file="/opt/besu/static-nodes.json"
+
+# Consensus
+min-gas-price=0
+
+# Logging
+logging="INFO"
+
+# Host allowlist
+host-allowlist=["*"]
