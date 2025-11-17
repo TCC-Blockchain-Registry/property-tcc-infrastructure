@@ -1,5 +1,3 @@
-# ECR Repositories for all services
-
 locals {
   ecr_repos = [
     "frontend",
@@ -32,7 +30,6 @@ resource "aws_ecr_repository" "repos" {
   }
 }
 
-# Lifecycle policy to keep only last 5 images (cost optimization)
 resource "aws_ecr_lifecycle_policy" "repo_policy" {
   for_each   = aws_ecr_repository.repos
   repository = each.value.name
@@ -53,7 +50,6 @@ resource "aws_ecr_lifecycle_policy" "repo_policy" {
   })
 }
 
-# Output ECR repository URLs
 output "ecr_repository_urls" {
   description = "URLs for ECR repositories"
   value = {

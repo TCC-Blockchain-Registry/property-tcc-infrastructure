@@ -45,3 +45,8 @@ offchain_desired_count = 2      # 2 tasks for high availability
 worker_desired_count = 1        # 1 task (single consumer)
 
 # Note: Besu validators are always 4 (1 per validator, 2 per AZ)
+
+# Smart Contract Addresses (set after deploying contracts to Besu)
+# property_title_address = "0x..."
+# approvals_module_address = "0x..."
+# registry_md_address = "0x..."

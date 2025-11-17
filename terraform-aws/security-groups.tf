@@ -1,4 +1,3 @@
-# Security Group for Application Load Balancer
 resource "aws_security_group" "alb" {
   name        = "${var.project_name}-alb-sg"
   description = "Security group for Application Load Balancer"
@@ -33,13 +32,11 @@ resource "aws_security_group" "alb" {
   }
 }
 
-# Security Group for ECS Tasks (Frontend, BFF, Orchestrator, Offchain, Worker)
 resource "aws_security_group" "ecs_tasks" {
   name        = "${var.project_name}-ecs-tasks-sg"
   description = "Security group for ECS tasks"
   vpc_id      = aws_vpc.main.id
 
-  # Frontend
   ingress {
     description     = "Frontend from ALB"
     from_port       = 3000
@@ -48,7 +45,6 @@ resource "aws_security_group" "ecs_tasks" {
     security_groups = [aws_security_group.alb.id]
   }
 
-  # BFF Gateway
   ingress {
     description     = "BFF from ALB"
     from_port       = 4000
@@ -57,34 +53,22 @@ resource "aws_security_group" "ecs_tasks" {
     security_groups = [aws_security_group.alb.id]
   }
 
-  # Orchestrator
   ingress {
-    description     = "Orchestrator from ALB and BFF"
+    description     = "Orchestrator from ALB"
     from_port       = 8081
     to_port         = 8081
     protocol        = "tcp"
     security_groups = [aws_security_group.alb.id]
   }
 
-  # Orchestrator (manual port for local dev compatibility)
   ingress {
-    description = "Orchestrator manual port"
-    from_port   = 8080
-    to_port     = 8080
+    description = "Offchain API from tasks"
+    from_port   = 3001
+    to_port     = 3001
     protocol    = "tcp"
     self        = true
   }
 
-  # Offchain API
-  ingress {
-    description     = "Offchain API from tasks"
-    from_port       = 3001
-    to_port         = 3001
-    protocol        = "tcp"
-    self            = true
-  }
-
-  # RabbitMQ AMQP
   ingress {
     description = "RabbitMQ AMQP"
     from_port   = 5672
@@ -93,7 +77,6 @@ resource "aws_security_group" "ecs_tasks" {
     self        = true
   }
 
-  # RabbitMQ Management UI
   ingress {
     description = "RabbitMQ Management"
     from_port   = 15672
@@ -102,7 +85,6 @@ resource "aws_security_group" "ecs_tasks" {
     self        = true
   }
 
-  # Allow tasks to communicate with each other
   ingress {
     description = "Inter-task communication"
     from_port   = 0
@@ -124,13 +106,11 @@ resource "aws_security_group" "ecs_tasks" {
   }
 }
 
-# Security Group for Besu Validators
 resource "aws_security_group" "besu" {
   name        = "${var.project_name}-besu-sg"
-  description = "Security group for Besu blockchain validators"
+  description = "Security group for Besu validators"
   vpc_id      = aws_vpc.main.id
 
-  # Besu RPC (JSON-RPC) - accessible by Offchain API
   ingress {
     description     = "Besu RPC from ECS tasks"
     from_port       = 8545
@@ -139,7 +119,6 @@ resource "aws_security_group" "besu" {
     security_groups = [aws_security_group.ecs_tasks.id]
   }
 
-  # Besu RPC - allow validators to query each other
   ingress {
     description = "Besu RPC inter-validator"
     from_port   = 8545
@@ -148,7 +127,6 @@ resource "aws_security_group" "besu" {
     self        = true
   }
 
-  # Besu P2P TCP (validator communication)
   ingress {
     description = "Besu P2P TCP"
     from_port   = 30303
@@ -157,7 +135,6 @@ resource "aws_security_group" "besu" {
     self        = true
   }
 
-  # Besu P2P UDP (discovery)
   ingress {
     description = "Besu P2P UDP"
     from_port   = 30303
@@ -179,7 +156,6 @@ resource "aws_security_group" "besu" {
   }
 }
 
-# Security Group for RDS PostgreSQL
 resource "aws_security_group" "rds" {
   name        = "${var.project_name}-rds-sg"
   description = "Security group for RDS PostgreSQL"
@@ -206,10 +182,9 @@ resource "aws_security_group" "rds" {
   }
 }
 
-# Security Group for EFS
 resource "aws_security_group" "efs" {
   name        = "${var.project_name}-efs-sg"
-  description = "Security group for EFS (Besu data storage)"
+  description = "Security group for EFS"
   vpc_id      = aws_vpc.main.id
 
   ingress {

@@ -16,7 +16,7 @@ resource "aws_ecs_task_definition" "frontend" {
   container_definitions = jsonencode([
     {
       name      = "frontend"
-      image     = "${aws_ecr_repository.frontend.repository_url}:latest"
+      image     = "${aws_ecr_repository.repos["frontend"].repository_url}:latest"
       essential = true
 
       portMappings = [
@@ -30,6 +30,10 @@ resource "aws_ecs_task_definition" "frontend" {
         {
           name  = "VITE_BFF_API_URL"
           value = "http://${aws_lb.main.dns_name}/api"
+        },
+        {
+          name  = "VITE_RPC_URL"
+          value = "http://${var.project_name}-besu-validator-1.${var.project_name}.local:8545"
         },
         {
           name  = "VITE_CHAIN_ID"
@@ -103,7 +107,7 @@ resource "aws_ecs_task_definition" "bff" {
   container_definitions = jsonencode([
     {
       name      = "bff-gateway"
-      image     = "${aws_ecr_repository.bff_gateway.repository_url}:latest"
+      image     = "${aws_ecr_repository.repos["bff-gateway"].repository_url}:latest"
       essential = true
 
       portMappings = [
@@ -228,7 +232,7 @@ resource "aws_ecs_task_definition" "orchestrator" {
   container_definitions = jsonencode([
     {
       name      = "orchestrator"
-      image     = "${aws_ecr_repository.orchestrator.repository_url}:latest"
+      image     = "${aws_ecr_repository.repos["orchestrator"].repository_url}:latest"
       essential = true
 
       portMappings = [
@@ -376,7 +380,7 @@ resource "aws_ecs_task_definition" "offchain" {
   container_definitions = jsonencode([
     {
       name      = "offchain-api"
-      image     = "${aws_ecr_repository.offchain_api.repository_url}:latest"
+      image     = "${aws_ecr_repository.repos["offchain-api"].repository_url}:latest"
       essential = true
 
       portMappings = [
@@ -402,6 +406,18 @@ resource "aws_ecs_task_definition" "offchain" {
         {
           name  = "NODE_ENV"
           value = "production"
+        },
+        {
+          name  = "PROPERTY_TITLE_ADDRESS"
+          value = var.property_title_address
+        },
+        {
+          name  = "APPROVALS_MODULE_ADDRESS"
+          value = var.approvals_module_address
+        },
+        {
+          name  = "REGISTRY_MD_ADDRESS"
+          value = var.registry_md_address
         }
       ]
 
@@ -509,7 +525,7 @@ resource "aws_ecs_task_definition" "queue_worker" {
   container_definitions = jsonencode([
     {
       name      = "queue-worker"
-      image     = "${aws_ecr_repository.queue_worker.repository_url}:latest"
+      image     = "${aws_ecr_repository.repos["queue-worker"].repository_url}:latest"
       essential = true
 
       environment = [
@@ -579,15 +595,15 @@ resource "aws_ecs_task_definition" "rabbitmq" {
   family                   = "${var.project_name}-rabbitmq"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = var.worker_cpu
-  memory                   = var.worker_memory
+  cpu                      = var.rabbitmq_cpu
+  memory                   = var.rabbitmq_memory
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
   task_role_arn            = aws_iam_role.ecs_task.arn
 
   container_definitions = jsonencode([
     {
       name      = "rabbitmq"
-      image     = "${aws_ecr_repository.rabbitmq.repository_url}:latest"
+      image     = "${aws_ecr_repository.repos["rabbitmq"].repository_url}:latest"
       essential = true
 
       portMappings = [
@@ -701,7 +717,7 @@ resource "aws_ecs_task_definition" "besu_validator_1" {
       file_system_id     = aws_efs_file_system.besu_data.id
       transit_encryption = "ENABLED"
       authorization_config {
-        access_point_id = aws_efs_access_point.besu_validator_1.id
+        access_point_id = aws_efs_access_point.besu_validator[0].id
       }
     }
   }
@@ -709,7 +725,7 @@ resource "aws_ecs_task_definition" "besu_validator_1" {
   container_definitions = jsonencode([
     {
       name      = "besu-validator-1"
-      image     = "${aws_ecr_repository.besu_validator.repository_url}:latest"
+      image     = "${aws_ecr_repository.repos["besu-validator"].repository_url}:latest"
       essential = true
 
       portMappings = [
@@ -824,7 +840,7 @@ resource "aws_ecs_task_definition" "besu_validator_2" {
       file_system_id     = aws_efs_file_system.besu_data.id
       transit_encryption = "ENABLED"
       authorization_config {
-        access_point_id = aws_efs_access_point.besu_validator_2.id
+        access_point_id = aws_efs_access_point.besu_validator[1].id
       }
     }
   }
@@ -832,7 +848,7 @@ resource "aws_ecs_task_definition" "besu_validator_2" {
   container_definitions = jsonencode([
     {
       name      = "besu-validator-2"
-      image     = "${aws_ecr_repository.besu_validator.repository_url}:latest"
+      image     = "${aws_ecr_repository.repos["besu-validator"].repository_url}:latest"
       essential = true
 
       portMappings = [
@@ -947,7 +963,7 @@ resource "aws_ecs_task_definition" "besu_validator_3" {
       file_system_id     = aws_efs_file_system.besu_data.id
       transit_encryption = "ENABLED"
       authorization_config {
-        access_point_id = aws_efs_access_point.besu_validator_3.id
+        access_point_id = aws_efs_access_point.besu_validator[2].id
       }
     }
   }
@@ -955,7 +971,7 @@ resource "aws_ecs_task_definition" "besu_validator_3" {
   container_definitions = jsonencode([
     {
       name      = "besu-validator-3"
-      image     = "${aws_ecr_repository.besu_validator.repository_url}:latest"
+      image     = "${aws_ecr_repository.repos["besu-validator"].repository_url}:latest"
       essential = true
 
       portMappings = [
@@ -1070,7 +1086,7 @@ resource "aws_ecs_task_definition" "besu_validator_4" {
       file_system_id     = aws_efs_file_system.besu_data.id
       transit_encryption = "ENABLED"
       authorization_config {
-        access_point_id = aws_efs_access_point.besu_validator_4.id
+        access_point_id = aws_efs_access_point.besu_validator[3].id
       }
     }
   }
@@ -1078,7 +1094,7 @@ resource "aws_ecs_task_definition" "besu_validator_4" {
   container_definitions = jsonencode([
     {
       name      = "besu-validator-4"
-      image     = "${aws_ecr_repository.besu_validator.repository_url}:latest"
+      image     = "${aws_ecr_repository.repos["besu-validator"].repository_url}:latest"
       essential = true
 
       portMappings = [

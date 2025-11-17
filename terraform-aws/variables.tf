@@ -28,7 +28,6 @@ variable "availability_zones" {
   default     = ["us-east-1a", "us-east-1b"]
 }
 
-# Database variables
 variable "db_instance_class" {
   description = "RDS instance class"
   type        = string
@@ -55,13 +54,11 @@ variable "db_username" {
 }
 
 variable "db_password" {
-  description = "PostgreSQL master password"
+  description = "PostgreSQL master password (auto-generated if empty)"
   type        = string
   sensitive   = true
-  default     = ""  # Will be generated or set via tfvars
+  default     = ""
 }
-
-# ECS Task configuration
 variable "frontend_cpu" {
   description = "CPU units for frontend task (256 = 0.25 vCPU)"
   type        = number
@@ -135,18 +132,16 @@ variable "rabbitmq_memory" {
 }
 
 variable "besu_cpu" {
-  description = "CPU units for each Besu validator task"
+  description = "CPU units for each Besu validator task (1024 = 1 vCPU)"
   type        = number
-  default     = 1024  # 1 vCPU per validator
+  default     = 1024
 }
 
 variable "besu_memory" {
   description = "Memory for each Besu validator task in MB"
   type        = number
-  default     = 2048  # 2 GB per validator
+  default     = 2048
 }
-
-# Service desired counts
 variable "frontend_desired_count" {
   description = "Desired number of frontend tasks"
   type        = number
@@ -183,14 +178,11 @@ variable "rabbitmq_desired_count" {
   default     = 1
 }
 
-# Besu validators (4 validators: 2 in each AZ)
 variable "besu_validator_count" {
-  description = "Total number of Besu validators"
+  description = "Total number of Besu validators (4 = 2 per AZ)"
   type        = number
   default     = 4
 }
-
-# EFS configuration
 variable "efs_performance_mode" {
   description = "EFS performance mode"
   type        = string
@@ -203,9 +195,26 @@ variable "efs_throughput_mode" {
   default     = "bursting"
 }
 
-# Tags
 variable "additional_tags" {
   description = "Additional tags to apply to all resources"
   type        = map(string)
   default     = {}
+}
+
+variable "property_title_address" {
+  description = "PropertyTitleTREX contract address (set after deployment)"
+  type        = string
+  default     = ""
+}
+
+variable "approvals_module_address" {
+  description = "ApprovalsModule contract address (set after deployment)"
+  type        = string
+  default     = ""
+}
+
+variable "registry_md_address" {
+  description = "RegistryMDCompliance contract address (set after deployment)"
+  type        = string
+  default     = ""
 }

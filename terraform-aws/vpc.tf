@@ -1,4 +1,3 @@
-# VPC
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
@@ -9,7 +8,6 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Internet Gateway
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -18,11 +16,10 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-# Public Subnets (for ALB and NAT Gateway)
 resource "aws_subnet" "public" {
   count                   = length(var.availability_zones)
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index)  # 10.0.0.0/24, 10.0.1.0/24
+  cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index)
   availability_zone       = var.availability_zones[count.index]
   map_public_ip_on_launch = true
 
@@ -33,11 +30,10 @@ resource "aws_subnet" "public" {
   }
 }
 
-# Private Subnets (for ECS tasks, RDS, EFS)
 resource "aws_subnet" "private" {
   count             = length(var.availability_zones)
   vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(var.vpc_cidr, 8, count.index + 10)  # 10.0.10.0/24, 10.0.11.0/24
+  cidr_block        = cidrsubnet(var.vpc_cidr, 8, count.index + 10)
   availability_zone = var.availability_zones[count.index]
 
   tags = {
@@ -47,7 +43,6 @@ resource "aws_subnet" "private" {
   }
 }
 
-# Elastic IP for NAT Gateway (only 1 to save cost)
 resource "aws_eip" "nat" {
   domain = "vpc"
 
@@ -58,7 +53,6 @@ resource "aws_eip" "nat" {
   depends_on = [aws_internet_gateway.main]
 }
 
-# NAT Gateway (only in first AZ to save cost)
 resource "aws_nat_gateway" "main" {
   allocation_id = aws_eip.nat.id
   subnet_id     = aws_subnet.public[0].id
@@ -70,7 +64,6 @@ resource "aws_nat_gateway" "main" {
   depends_on = [aws_internet_gateway.main]
 }
 
-# Route Table for Public Subnets
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -84,14 +77,12 @@ resource "aws_route_table" "public" {
   }
 }
 
-# Associate Public Subnets with Public Route Table
 resource "aws_route_table_association" "public" {
   count          = length(aws_subnet.public)
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
 }
 
-# Route Table for Private Subnets
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
@@ -105,15 +96,12 @@ resource "aws_route_table" "private" {
   }
 }
 
-# Associate Private Subnets with Private Route Table
 resource "aws_route_table_association" "private" {
   count          = length(aws_subnet.private)
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private.id
 }
 
-# VPC Endpoints for cost optimization (optional but recommended)
-# S3 Gateway Endpoint (free)
 resource "aws_vpc_endpoint" "s3" {
   vpc_id       = aws_vpc.main.id
   service_name = "com.amazonaws.${var.aws_region}.s3"
@@ -128,7 +116,6 @@ resource "aws_vpc_endpoint" "s3" {
   }
 }
 
-# ECR API Endpoint (reduces NAT data transfer costs)
 resource "aws_vpc_endpoint" "ecr_api" {
   vpc_id              = aws_vpc.main.id
   service_name        = "com.amazonaws.${var.aws_region}.ecr.api"
@@ -142,7 +129,6 @@ resource "aws_vpc_endpoint" "ecr_api" {
   }
 }
 
-# ECR Docker Endpoint
 resource "aws_vpc_endpoint" "ecr_dkr" {
   vpc_id              = aws_vpc.main.id
   service_name        = "com.amazonaws.${var.aws_region}.ecr.dkr"
@@ -156,7 +142,6 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
   }
 }
 
-# CloudWatch Logs Endpoint
 resource "aws_vpc_endpoint" "logs" {
   vpc_id              = aws_vpc.main.id
   service_name        = "com.amazonaws.${var.aws_region}.logs"
@@ -170,7 +155,6 @@ resource "aws_vpc_endpoint" "logs" {
   }
 }
 
-# Security Group for VPC Endpoints
 resource "aws_security_group" "vpc_endpoints" {
   name        = "${var.project_name}-vpc-endpoints-sg"
   description = "Security group for VPC endpoints"
