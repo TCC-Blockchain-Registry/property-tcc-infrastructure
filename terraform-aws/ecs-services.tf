@@ -771,8 +771,8 @@ resource "aws_ecs_task_definition" "besu_validator_1" {
         command     = ["CMD-SHELL", "curl -f http://localhost:8545 -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' || exit 1"]
         interval    = 30
         timeout     = 5
-        retries     = 3
-        startPeriod = 120
+        retries     = 5
+        startPeriod = 180
       }
     }
   ])
@@ -853,15 +853,15 @@ resource "aws_ecs_task_definition" "besu_validator_2" {
 
       portMappings = [
         {
-          containerPort = 8546
+          containerPort = 8545
           protocol      = "tcp"
         },
         {
-          containerPort = 30304
+          containerPort = 30303
           protocol      = "tcp"
         },
         {
-          containerPort = 30304
+          containerPort = 30303
           protocol      = "udp"
         }
       ]
@@ -891,11 +891,11 @@ resource "aws_ecs_task_definition" "besu_validator_2" {
       }
 
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:8546 -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' || exit 1"]
+        command     = ["CMD-SHELL", "curl -f http://localhost:8545 -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' || exit 1"]
         interval    = 30
         timeout     = 5
-        retries     = 3
-        startPeriod = 120
+        retries     = 5
+        startPeriod = 180
       }
     }
   ])
@@ -976,15 +976,15 @@ resource "aws_ecs_task_definition" "besu_validator_3" {
 
       portMappings = [
         {
-          containerPort = 8547
+          containerPort = 8545
           protocol      = "tcp"
         },
         {
-          containerPort = 30305
+          containerPort = 30303
           protocol      = "tcp"
         },
         {
-          containerPort = 30305
+          containerPort = 30303
           protocol      = "udp"
         }
       ]
@@ -1014,11 +1014,11 @@ resource "aws_ecs_task_definition" "besu_validator_3" {
       }
 
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:8547 -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' || exit 1"]
+        command     = ["CMD-SHELL", "curl -f http://localhost:8545 -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' || exit 1"]
         interval    = 30
         timeout     = 5
-        retries     = 3
-        startPeriod = 120
+        retries     = 5
+        startPeriod = 180
       }
     }
   ])
@@ -1099,15 +1099,15 @@ resource "aws_ecs_task_definition" "besu_validator_4" {
 
       portMappings = [
         {
-          containerPort = 8548
+          containerPort = 8545
           protocol      = "tcp"
         },
         {
-          containerPort = 30306
+          containerPort = 30303
           protocol      = "tcp"
         },
         {
-          containerPort = 30306
+          containerPort = 30303
           protocol      = "udp"
         }
       ]
@@ -1137,11 +1137,11 @@ resource "aws_ecs_task_definition" "besu_validator_4" {
       }
 
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:8548 -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' || exit 1"]
+        command     = ["CMD-SHELL", "curl -f http://localhost:8545 -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' || exit 1"]
         interval    = 30
         timeout     = 5
-        retries     = 3
-        startPeriod = 120
+        retries     = 5
+        startPeriod = 180
       }
     }
   ])

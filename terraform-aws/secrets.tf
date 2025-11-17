@@ -38,44 +38,30 @@ resource "aws_secretsmanager_secret_version" "rabbitmq_password" {
   secret_string = random_password.rabbitmq_password.result
 }
 
-# Besu Admin Private Key (placeholder - should be replaced with actual key)
-resource "aws_secretsmanager_secret" "besu_admin_key" {
+# Besu Private Keys
+# These secrets MUST be created manually BEFORE running terraform apply
+# Use the script: ./scripts/2-create-secrets.sh
+
+data "aws_secretsmanager_secret" "besu_admin_key" {
   name = "${var.project_name}/besu/admin-private-key"
-
-  tags = {
-    Name = "${var.project_name}-besu-admin-key"
-  }
 }
 
-resource "aws_secretsmanager_secret_version" "besu_admin_key" {
-  secret_id     = aws_secretsmanager_secret.besu_admin_key.id
-  secret_string = "0x0000000000000000000000000000000000000000000000000000000000000000"  # PLACEHOLDER - update via AWS Console
+data "aws_secretsmanager_secret_version" "besu_admin_key" {
+  secret_id = data.aws_secretsmanager_secret.besu_admin_key.id
 }
 
-# Besu Orchestrator Private Key
-resource "aws_secretsmanager_secret" "besu_orchestrator_key" {
+data "aws_secretsmanager_secret" "besu_orchestrator_key" {
   name = "${var.project_name}/besu/orchestrator-private-key"
-
-  tags = {
-    Name = "${var.project_name}-besu-orchestrator-key"
-  }
 }
 
-resource "aws_secretsmanager_secret_version" "besu_orchestrator_key" {
-  secret_id     = aws_secretsmanager_secret.besu_orchestrator_key.id
-  secret_string = "0x0000000000000000000000000000000000000000000000000000000000000000"  # PLACEHOLDER
+data "aws_secretsmanager_secret_version" "besu_orchestrator_key" {
+  secret_id = data.aws_secretsmanager_secret.besu_orchestrator_key.id
 }
 
-# Besu Registrar Private Key
-resource "aws_secretsmanager_secret" "besu_registrar_key" {
+data "aws_secretsmanager_secret" "besu_registrar_key" {
   name = "${var.project_name}/besu/registrar-private-key"
-
-  tags = {
-    Name = "${var.project_name}-besu-registrar-key"
-  }
 }
 
-resource "aws_secretsmanager_secret_version" "besu_registrar_key" {
-  secret_id     = aws_secretsmanager_secret.besu_registrar_key.id
-  secret_string = "0x0000000000000000000000000000000000000000000000000000000000000000"  # PLACEHOLDER
+data "aws_secretsmanager_secret_version" "besu_registrar_key" {
+  secret_id = data.aws_secretsmanager_secret.besu_registrar_key.id
 }

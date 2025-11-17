@@ -34,3 +34,7 @@ logs/
 # Temporary files
 tmp/
 temp/
+
+# Generated files (contain private keys - NEVER commit!)
+scripts/generated/
+scripts/besu-keys-generated/
