@@ -23,7 +23,13 @@ variable "vpc_cidr" {
 }
 
 variable "availability_zones" {
-  description = "Availability zones to use"
+  description = "Availability zones for private subnets (services)"
+  type        = list(string)
+  default     = ["us-east-1a"]
+}
+
+variable "public_availability_zones" {
+  description = "Availability zones for public subnets (ALB requires 2)"
   type        = list(string)
   default     = ["us-east-1a", "us-east-1b"]
 }
@@ -59,6 +65,7 @@ variable "db_password" {
   sensitive   = true
   default     = ""
 }
+
 variable "frontend_cpu" {
   description = "CPU units for frontend task (256 = 0.25 vCPU)"
   type        = number
@@ -142,10 +149,11 @@ variable "besu_memory" {
   type        = number
   default     = 2048
 }
+
 variable "frontend_desired_count" {
   description = "Desired number of frontend tasks"
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "bff_desired_count" {
@@ -163,7 +171,7 @@ variable "orchestrator_desired_count" {
 variable "offchain_desired_count" {
   description = "Desired number of offchain API tasks"
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "worker_desired_count" {
@@ -172,17 +180,12 @@ variable "worker_desired_count" {
   default     = 1
 }
 
-variable "rabbitmq_desired_count" {
-  description = "Desired number of RabbitMQ tasks"
-  type        = number
-  default     = 1
-}
-
 variable "besu_validator_count" {
-  description = "Total number of Besu validators (4 = 2 per AZ)"
+  description = "Total number of Besu validators (single AZ deployment)"
   type        = number
   default     = 4
 }
+
 variable "efs_performance_mode" {
   description = "EFS performance mode"
   type        = string

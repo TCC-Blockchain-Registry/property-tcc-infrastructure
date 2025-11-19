@@ -1,4 +1,4 @@
-# Besu Validator 3 Configuration (us-east-1b)
+# Besu Validator 3 Configuration (us-east-1a)
 
 # Data directory
 data-path="/opt/besu/data"

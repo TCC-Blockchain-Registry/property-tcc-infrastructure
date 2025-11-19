@@ -1,4 +1,3 @@
-# CloudWatch Log Groups for each service
 
 locals {
   services = [
@@ -19,7 +18,7 @@ resource "aws_cloudwatch_log_group" "ecs" {
   for_each = toset(local.services)
 
   name              = "/ecs/${var.project_name}-${each.value}"
-  retention_in_days = 7  # 7 days retention for demo (reduce costs)
+  retention_in_days = 7
 
   tags = {
     Name    = "${var.project_name}-${each.value}-logs"
@@ -27,9 +26,7 @@ resource "aws_cloudwatch_log_group" "ecs" {
   }
 }
 
-# CloudWatch Alarms for critical metrics
 
-# ALB Unhealthy Targets
 resource "aws_cloudwatch_metric_alarm" "alb_unhealthy_targets" {
   alarm_name          = "${var.project_name}-alb-unhealthy-targets"
   comparison_operator = "GreaterThanThreshold"
@@ -47,7 +44,6 @@ resource "aws_cloudwatch_metric_alarm" "alb_unhealthy_targets" {
   }
 }
 
-# ECS Cluster CPU Utilization
 resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
   alarm_name          = "${var.project_name}-ecs-cpu-high"
   comparison_operator = "GreaterThanThreshold"
@@ -65,7 +61,6 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
   }
 }
 
-# RDS CPU Utilization
 resource "aws_cloudwatch_metric_alarm" "rds_cpu_high" {
   alarm_name          = "${var.project_name}-rds-cpu-high"
   comparison_operator = "GreaterThanThreshold"

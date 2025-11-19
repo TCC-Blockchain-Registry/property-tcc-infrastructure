@@ -1,150 +1,106 @@
-# Property TCC - Infraestrutura AWS
+# Property TCC - AWS Infrastructure
 
-Infraestrutura como código (IaC) para deploy do sistema de tokenização de imóveis Property TCC na AWS.
+Infrastructure as Code (IaC) for deploying the Property TCC real estate tokenization system on AWS.
 
-## 📖 Documentação Completa
+## Prerequisites
 
-**👉 [Ver documentação completa em docs/README.md](docs/README.md)**
-
-## 🚀 Quick Start
-
-### Opção 1: Full AWS (Blockchain na AWS)
+Install required tools:
 
 ```bash
-cd /Users/leonardodev/tcc/infrastructure
-
-# 1. Gerar configuração Besu
-./scripts/1-generate-network.sh
-
-# 2. Criar secrets AWS
-./scripts/2-create-secrets.sh
-
-# 3. Deploy infraestrutura
-./scripts/3-terraform-deploy.sh
-
-# 4. Upload keys para EFS
-./scripts/4-upload-keys.sh
-
-# 5. Verificar deployment
-./scripts/5-verify-network.sh
+brew install hyperledger/besu/besu terraform jq
+pip3 install rlp
 ```
 
-📖 **[Documentação completa do Plano A](docs/PLANO_A.md)**
+Also required:
+- [AWS CLI](https://aws.amazon.com/cli/) - configured with credentials
+- [Docker](https://www.docker.com/products/docker-desktop)
 
----
-
-### Opção 2: Híbrido (Besu local + Cloudflare Tunnel)
+## Quick Start
 
 ```bash
-# 1. Rodar Besu localmente
-cd /Users/leonardodev/tcc/besu-property-ledger
-./script/setup/setup-all.sh
+# 1. Generate Besu network configuration
+./scripts/01-generate-network.sh
 
-# 2. Configurar Cloudflare Tunnel
-cloudflared tunnel create besu-tcc
-cloudflared tunnel run besu-tcc
+# 2. Build and push Docker images to ECR
+./scripts/02-build-push-images.sh
 
-# 3. Deploy AWS (sem Besu)
-cd /Users/leonardodev/tcc/infrastructure
-./scripts/2-create-secrets.sh
-./scripts/3-terraform-deploy.sh
+# 3. Upload Besu keys to EFS
+./scripts/03-upload-keys.sh
+
+# 4. Deploy Besu validators
+./scripts/04-deploy-besu.sh
+
+# 5. Deploy smart contracts
+./scripts/05-deploy-contracts.sh
+
+# 6. Deploy application services
+./scripts/06-deploy-services.sh
+
+# 7. Verify deployment
+./scripts/07-health-check.sh
+
+# 8. Show access URLs
+./scripts/08-show-urls.sh
 ```
 
-📖 **[Documentação completa do Plano B](docs/PLANO_B.md)**
+**Note:** Before running the scripts, deploy infrastructure with Terraform:
+```bash
+cd terraform-aws
+terraform init
+terraform apply
+```
 
----
-
-## 📁 Estrutura do Projeto
+## Project Structure
 
 ```
-infrastructure/
-├── README.md                    # Este arquivo
-├── docs/                        # 📚 Documentação completa
-│   ├── README.md                # Hub principal
-│   ├── PLANO_A.md               # Full AWS
-│   ├── PLANO_B.md               # Híbrido (Besu local)
-│   ├── ARCHITECTURE.md          # Análise técnica
-│   └── TROUBLESHOOTING.md       # Problemas e soluções
+property-tcc-infrastructure/
+├── scripts/                    # Deployment automation
+│   ├── lib/                    # Shared functions
+│   │   ├── colors.sh           # Output formatting
+│   │   └── ecs-helpers.sh      # ECS utilities
+│   ├── 01-generate-network.sh  # Generate Besu keys
+│   ├── 02-build-push-images.sh # Build/push Docker
+│   ├── 03-upload-keys.sh       # Upload to EFS
+│   ├── 04-deploy-besu.sh       # Deploy validators
+│   ├── 05-deploy-contracts.sh  # Deploy contracts
+│   ├── 06-deploy-services.sh   # Deploy services
+│   ├── 07-health-check.sh      # Health checks
+│   └── 08-show-urls.sh         # Show URLs
 │
-├── scripts/                     # 🔧 Scripts de automação
-│   ├── 1-generate-network.sh   # Gera keys Besu
-│   ├── 2-create-secrets.sh     # Cria AWS Secrets
-│   ├── 3-terraform-deploy.sh   # Deploy Terraform
-│   ├── 4-upload-keys.sh        # Upload para EFS
-│   ├── 5-verify-network.sh     # Valida consensus
-│   └── lib/                    # Helpers
-│       ├── colors.sh           # Output colorido
-│       └── validators.sh       # Validações
-│
-├── terraform-aws/               # 🏗️ Infraestrutura Terraform
+├── terraform-aws/              # Terraform configuration
+│   ├── main.tf                 # Provider config
+│   ├── variables.tf            # Input variables
 │   ├── vpc.tf                  # VPC, subnets, NAT
 │   ├── ecs-cluster.tf          # ECS cluster
-│   ├── ecs-services.tf         # Services e tasks
+│   ├── ecs-services.tf         # Tasks and services
 │   ├── efs.tf                  # Persistent storage
 │   ├── rds.tf                  # PostgreSQL
 │   ├── alb.tf                  # Load balancer
-│   ├── security-groups.tf      # Firewall rules
+│   ├── security-groups.tf      # Security groups
 │   ├── secrets.tf              # Secrets Manager
-│   └── ...                     # Outros recursos
+│   └── outputs.tf              # Output values
 │
-└── besu-aws/                    # 🔗 Configuração Besu
-    ├── config/                 # Configs por validator
+└── besu-aws/                   # Besu AWS configuration
+    ├── config/                 # Per-validator configs
     ├── genesis.json            # Genesis block
-    ├── static-nodes.json       # Peer discovery
+    ├── static-nodes.json.template
     ├── Dockerfile              # Container image
     └── entrypoint.sh           # Startup script
 ```
 
----
-
-## 🛠️ Pré-requisitos
-
-- **Besu CLI**: `brew install hyperledger/besu/besu`
-- **jq**: `brew install jq`
-- **Python 3** + rlp: `pip3 install rlp`
-- **AWS CLI**: [Instalação](https://aws.amazon.com/cli/)
-- **Terraform**: `brew install terraform`
-- **Docker**: [Docker Desktop](https://www.docker.com/products/docker-desktop)
-
-Verificar:
-```bash
-./scripts/lib/validators.sh check_prerequisites
-```
-
----
-
-## 🆘 Ajuda
-
-- **Problemas?** → [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
-- **Dúvidas sobre arquitetura?** → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- **Logs AWS**: `aws logs tail /ecs/property-tcc/... --follow`
-
----
-
-## ⚠️ Segurança
-
-**NUNCA commite**:
-- `scripts/generated/` - Contém private keys 🔐
-- `terraform-aws/terraform.tfvars` - Contém configurações sensíveis
-- `terraform-aws/.terraform/` - Cache Terraform
-
-Já estão no `.gitignore` ✅
-
----
-
-## 📊 Arquitetura
+## Architecture
 
 ```
+AWS Cloud (us-east-1)
 ┌─────────────────────────────────────────────────┐
-│               AWS Cloud (us-east-1)              │
 │                                                  │
 │  ┌──────────┐    ┌─────────┐   ┌──────────────┐ │
 │  │ Frontend │───▶│   BFF   │──▶│ Orchestrator │ │
 │  │  (ECS)   │    │  (ECS)  │   │    (ECS)     │ │
 │  └──────────┘    └─────────┘   └──────┬───────┘ │
-│       ▲                  │              │        │
-│       │                  │              ▼        │
-│   ┌───┴────┐    ┌────────▼─┐    ┌──────────┐   │
+│       ▲                │              │         │
+│       │                │              ▼         │
+│   ┌───┴────┐    ┌──────▼───┐    ┌──────────┐   │
 │   │  ALB   │    │ Offchain │    │   RDS    │   │
 │   └────────┘    │   API    │    │(Postgres)│   │
 │                 │  (ECS)   │    └──────────┘   │
@@ -159,8 +115,58 @@ Já estão no `.gitignore` ✅
 └──────────────────────────────────────────────────┘
 ```
 
----
+## Troubleshooting
 
-**Documentação completa**: [docs/README.md](docs/README.md)
+### Check logs
 
-**Última atualização**: 2025-11-17
+```bash
+# Besu validator logs
+aws logs tail /ecs/property-tcc/besu-validator-1 --follow
+
+# Application logs
+aws logs tail /ecs/property-tcc/orchestrator --follow
+```
+
+### Besu validators stuck at block 0
+
+1. Verify keys uploaded to EFS:
+```bash
+aws ecs execute-command --cluster property-tcc \
+  --task <task-id> --container besu-validator-1 \
+  --command "ls -la /opt/besu/data/key"
+```
+
+2. Re-upload if missing: `./scripts/03-upload-keys.sh`
+
+### 0 peers connected
+
+Check Security Group allows TCP/UDP 30303:
+```bash
+aws ec2 describe-security-groups \
+  --filters "Name=tag:Name,Values=property-tcc-besu-sg" \
+  --query 'SecurityGroups[*].IpPermissions'
+```
+
+### Test RPC
+
+```bash
+curl http://<ALB_DNS>/rpc/validator-1 \
+  -X POST -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+```
+
+## Security
+
+**Never commit:**
+- `scripts/generated/` - contains private keys
+- `terraform-aws/terraform.tfvars` - sensitive configuration
+- `terraform-aws/.terraform/` - Terraform cache
+
+These are already in `.gitignore`.
+
+## Cleanup
+
+```bash
+cd terraform-aws
+terraform destroy
+```

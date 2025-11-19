@@ -8,12 +8,6 @@ terraform {
     }
   }
 
-  # Uncomment for remote state (optional)
-  # backend "s3" {
-  #   bucket = "property-tcc-terraform-state"
-  #   key    = "infrastructure/terraform.tfstate"
-  #   region = "us-east-1"
-  # }
 }
 
 provider "aws" {
@@ -28,12 +22,3 @@ provider "aws" {
     }
   }
 }
-
-# Data sources
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
-data "aws_caller_identity" "current" {}
-
-data "aws_region" "current" {}

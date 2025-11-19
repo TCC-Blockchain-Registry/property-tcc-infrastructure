@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# upload-keys-to-efs.sh
+# 03-upload-keys.sh
 #
 # Uploads Besu validator keys to EFS Access Points
 # Must be run AFTER terraform apply creates EFS
@@ -13,23 +13,12 @@
 
 set -e
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/colors.sh"
 KEYS_DIR="$SCRIPT_DIR/besu-keys-generated/efs-upload"
 PROJECT_NAME="property-tcc"
 AWS_REGION="us-east-1"
-
-log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
-log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
-log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # Check prerequisites
 check_prerequisites() {
@@ -306,7 +295,7 @@ main() {
     echo "  1. Via temporary ECS task (automated, requires ECS Exec)"
     echo "  2. Manual upload (show instructions)"
     echo ""
-    read -p "Enter choice [1/2]: " CHOICE
+    read -r -p "Enter choice [1/2]: " CHOICE
 
     case $CHOICE in
         1)

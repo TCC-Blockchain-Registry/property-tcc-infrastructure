@@ -1,4 +1,3 @@
-# Outputs for easy access to deployed resources
 
 output "alb_dns_name" {
   description = "DNS name of the Application Load Balancer"
@@ -65,7 +64,6 @@ output "service_discovery_namespace" {
   value       = aws_service_discovery_private_dns_namespace.main.name
 }
 
-# Secrets ARNs for reference
 output "jwt_secret_arn" {
   description = "ARN of JWT secret in Secrets Manager"
   value       = aws_secretsmanager_secret.jwt_secret.arn
@@ -84,7 +82,6 @@ output "rabbitmq_password_secret_arn" {
   sensitive   = true
 }
 
-# Quick access commands
 output "access_commands" {
   description = "Useful commands for accessing the system"
   value = {
@@ -98,7 +95,6 @@ output "access_commands" {
   }
 }
 
-# Summary for presentation
 output "deployment_summary" {
   description = "Deployment summary for TCC presentation"
   value = {
@@ -106,7 +102,7 @@ output "deployment_summary" {
     availability_zones = var.availability_zones
     total_services    = 7
     clustered_services = ["bff-gateway (2 tasks)", "orchestrator (2 tasks)"]
-    besu_validators   = "4 validators (2 in each AZ)"
+    besu_validators   = "4 validators (single AZ)"
     load_balancer     = aws_lb.main.dns_name
     database          = "PostgreSQL ${aws_db_instance.postgres.engine_version} (${var.db_instance_class})"
     storage           = "EFS for Besu blockchain data"

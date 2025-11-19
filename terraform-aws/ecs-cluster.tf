@@ -1,4 +1,3 @@
-# ECS Cluster
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-cluster"
 
@@ -12,7 +11,6 @@ resource "aws_ecs_cluster" "main" {
   }
 }
 
-# ECS Cluster Capacity Providers (Fargate)
 resource "aws_ecs_cluster_capacity_providers" "main" {
   cluster_name = aws_ecs_cluster.main.name
 
@@ -25,7 +23,6 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
   }
 }
 
-# Service Discovery Namespace (for internal service-to-service communication)
 resource "aws_service_discovery_private_dns_namespace" "main" {
   name = "${var.project_name}.local"
   vpc  = aws_vpc.main.id

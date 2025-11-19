@@ -17,16 +17,16 @@ resource "aws_internet_gateway" "main" {
 }
 
 resource "aws_subnet" "public" {
-  count                   = length(var.availability_zones)
+  count                   = length(var.public_availability_zones)
   vpc_id                  = aws_vpc.main.id
   cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index)
-  availability_zone       = var.availability_zones[count.index]
+  availability_zone       = var.public_availability_zones[count.index]
   map_public_ip_on_launch = true
 
   tags = {
     Name = "${var.project_name}-public-subnet-${count.index + 1}"
     Tier = "Public"
-    AZ   = var.availability_zones[count.index]
+    AZ   = var.public_availability_zones[count.index]
   }
 }
 

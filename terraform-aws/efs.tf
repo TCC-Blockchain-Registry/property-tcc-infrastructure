@@ -1,4 +1,3 @@
-# EFS File System for Besu data storage
 resource "aws_efs_file_system" "besu_data" {
   creation_token   = "${var.project_name}-besu-data"
   performance_mode = var.efs_performance_mode
@@ -15,7 +14,6 @@ resource "aws_efs_file_system" "besu_data" {
   }
 }
 
-# EFS Mount Targets (one per AZ)
 resource "aws_efs_mount_target" "besu_data" {
   count           = length(var.availability_zones)
   file_system_id  = aws_efs_file_system.besu_data.id
@@ -23,7 +21,6 @@ resource "aws_efs_mount_target" "besu_data" {
   security_groups = [aws_security_group.efs.id]
 }
 
-# EFS Access Point for each Besu validator
 resource "aws_efs_access_point" "besu_validator" {
   count = var.besu_validator_count
 

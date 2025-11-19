@@ -1,4 +1,3 @@
-# ECS Task Execution Role (for pulling images from ECR, writing logs)
 resource "aws_iam_role" "ecs_task_execution" {
   name = "${var.project_name}-ecs-task-execution-role"
 
@@ -18,13 +17,11 @@ resource "aws_iam_role" "ecs_task_execution" {
   }
 }
 
-# Attach AWS managed policy for ECS task execution
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
   role       = aws_iam_role.ecs_task_execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# Additional policy for Secrets Manager access
 resource "aws_iam_role_policy" "ecs_secrets_access" {
   name = "${var.project_name}-ecs-secrets-access"
   role = aws_iam_role.ecs_task_execution.id
@@ -42,7 +39,6 @@ resource "aws_iam_role_policy" "ecs_secrets_access" {
   })
 }
 
-# ECS Task Role (for application-level permissions)
 resource "aws_iam_role" "ecs_task" {
   name = "${var.project_name}-ecs-task-role"
 
@@ -62,7 +58,6 @@ resource "aws_iam_role" "ecs_task" {
   }
 }
 
-# Policy for tasks to interact with AWS services
 resource "aws_iam_role_policy" "ecs_task_policy" {
   name = "${var.project_name}-ecs-task-policy"
   role = aws_iam_role.ecs_task.id
@@ -91,7 +86,6 @@ resource "aws_iam_role_policy" "ecs_task_policy" {
   })
 }
 
-# ECS Exec Role (for debugging containers)
 resource "aws_iam_role_policy" "ecs_exec_policy" {
   name = "${var.project_name}-ecs-exec-policy"
   role = aws_iam_role.ecs_task.id

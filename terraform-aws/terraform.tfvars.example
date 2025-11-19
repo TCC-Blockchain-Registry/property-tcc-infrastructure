@@ -5,7 +5,7 @@
 aws_region = "us-east-1"
 project_name = "property-tcc"
 environment = "demo"
-availability_zones = ["us-east-1a", "us-east-1b"]
+availability_zones = ["us-east-1a"]
 
 # Database Configuration
 db_instance_class = "db.t4g.micro"  # Free Tier eligible
@@ -33,18 +33,22 @@ offchain_memory = 1024
 worker_cpu = 256
 worker_memory = 512
 
+# RabbitMQ
+rabbitmq_cpu = 256
+rabbitmq_memory = 512
+
 # Besu Validators
 besu_cpu = 1024    # 1 vCPU
 besu_memory = 2048 # 2 GB
 
-# Desired Task Counts (Clustering)
-frontend_desired_count = 2      # 2 tasks for high availability
-bff_desired_count = 2          # 2 tasks (clustered across AZs)
-orchestrator_desired_count = 2  # 2 tasks (clustered across AZs)
-offchain_desired_count = 2      # 2 tasks for high availability
+# Desired Task Counts
+frontend_desired_count = 1      # 1 task (cost optimized)
+bff_desired_count = 2          # 2 tasks (single AZ)
+orchestrator_desired_count = 2  # 2 tasks (single AZ)
+offchain_desired_count = 1      # 1 task (cost optimized)
 worker_desired_count = 1        # 1 task (single consumer)
 
-# Note: Besu validators are always 4 (1 per validator, 2 per AZ)
+# Note: Besu validators are always 4 (all in single AZ for cost optimization)
 
 # Smart Contract Addresses (set after deploying contracts to Besu)
 # property_title_address = "0x..."

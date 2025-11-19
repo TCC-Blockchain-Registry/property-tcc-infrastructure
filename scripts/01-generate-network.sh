@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# generate-besu-network.sh
+# 01-generate-network.sh
 #
 # Generates a complete Besu QBFT network configuration for AWS deployment
 # - Generates 4 validator key pairs
@@ -14,15 +14,9 @@
 
 set -e
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
 # Directories
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/colors.sh"
 BESU_AWS_DIR="$(cd "$SCRIPT_DIR/../besu-aws" && pwd)"
 KEYS_OUTPUT_DIR="$SCRIPT_DIR/besu-keys-generated"
 TEMP_DIR=$(mktemp -d)
@@ -33,23 +27,6 @@ CLOUD_MAP_DOMAIN="property-tcc.local"
 
 # Validator count
 VALIDATOR_COUNT=4
-
-# Logging
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
 
 # Check prerequisites
 check_prerequisites() {
@@ -354,20 +331,15 @@ EOF
    docker build -t besu-validator:latest .
    \`\`\`
 
-2. **Upload Keys to EFS** (after \`terraform apply\`):
-   \`\`\`bash
-   ./scripts/upload-keys-to-efs.sh
-   \`\`\`
-
-3. **Deploy to AWS**:
+2. **Deploy to AWS**:
    \`\`\`bash
    cd terraform-aws
    terraform apply
    \`\`\`
 
-4. **Verify Consensus**:
+3. **Upload Keys to EFS**:
    \`\`\`bash
-   ./scripts/verify-besu-config.sh
+   ./scripts/03-upload-keys.sh
    \`\`\`
 
 ## Security Notes
@@ -446,7 +418,7 @@ main() {
     echo "  1. Review: cat $KEYS_OUTPUT_DIR/NETWORK_SUMMARY.md"
     echo "  2. Rebuild Besu image with updated configs"
     echo "  3. Run terraform apply"
-    echo "  4. Upload keys to EFS using upload-keys-to-efs.sh"
+    echo "  4. Upload keys to EFS using ./scripts/03-upload-keys.sh"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }

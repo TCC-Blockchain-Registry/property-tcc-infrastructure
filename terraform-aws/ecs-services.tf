@@ -1,9 +1,3 @@
-# ECS Task Definitions and Services
-
-# ============================================================================
-# 1. FRONTEND SERVICE
-# ============================================================================
-
 resource "aws_ecs_task_definition" "frontend" {
   family                   = "${var.project_name}-frontend"
   network_mode             = "awsvpc"
@@ -21,7 +15,7 @@ resource "aws_ecs_task_definition" "frontend" {
 
       portMappings = [
         {
-          containerPort = 3000
+          containerPort = 80
           protocol      = "tcp"
         }
       ]
@@ -30,10 +24,6 @@ resource "aws_ecs_task_definition" "frontend" {
         {
           name  = "VITE_BFF_API_URL"
           value = "http://${aws_lb.main.dns_name}/api"
-        },
-        {
-          name  = "VITE_RPC_URL"
-          value = "http://${var.project_name}-besu-validator-1.${var.project_name}.local:8545"
         },
         {
           name  = "VITE_CHAIN_ID"
@@ -51,7 +41,7 @@ resource "aws_ecs_task_definition" "frontend" {
       }
 
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:3000 || exit 1"]
+        command     = ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
         interval    = 30
         timeout     = 5
         retries     = 3
@@ -81,7 +71,7 @@ resource "aws_ecs_service" "frontend" {
   load_balancer {
     target_group_arn = aws_lb_target_group.frontend.arn
     container_name   = "frontend"
-    container_port   = 3000
+    container_port   = 80
   }
 
   depends_on = [aws_lb_listener.http]
@@ -90,10 +80,6 @@ resource "aws_ecs_service" "frontend" {
     Name = "${var.project_name}-frontend-service"
   }
 }
-
-# ============================================================================
-# 2. BFF GATEWAY SERVICE (CLUSTERED - 2 TASKS)
-# ============================================================================
 
 resource "aws_ecs_task_definition" "bff" {
   family                   = "${var.project_name}-bff-gateway"
@@ -171,7 +157,7 @@ resource "aws_ecs_service" "bff" {
   name            = "${var.project_name}-bff-gateway"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.bff.arn
-  desired_count   = var.bff_desired_count  # 2 tasks for clustering
+  desired_count   = var.bff_desired_count
   launch_type     = "FARGATE"
 
   network_configuration {
@@ -215,10 +201,6 @@ resource "aws_service_discovery_service" "bff" {
     failure_threshold = 1
   }
 }
-
-# ============================================================================
-# 3. ORCHESTRATOR SERVICE (CLUSTERED - 2 TASKS)
-# ============================================================================
 
 resource "aws_ecs_task_definition" "orchestrator" {
   family                   = "${var.project_name}-orchestrator"
@@ -270,6 +252,10 @@ resource "aws_ecs_task_definition" "orchestrator" {
         {
           name  = "SPRING_PROFILES_ACTIVE"
           value = "production"
+        },
+        {
+          name  = "OFFCHAIN_API_URL"
+          value = "http://${aws_lb.internal.dns_name}"
         }
       ]
 
@@ -316,7 +302,7 @@ resource "aws_ecs_service" "orchestrator" {
   name            = "${var.project_name}-orchestrator"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.orchestrator.arn
-  desired_count   = var.orchestrator_desired_count  # 2 tasks for clustering
+  desired_count   = var.orchestrator_desired_count
   launch_type     = "FARGATE"
 
   network_configuration {
@@ -363,10 +349,6 @@ resource "aws_service_discovery_service" "orchestrator" {
     failure_threshold = 1
   }
 }
-
-# ============================================================================
-# 4. OFFCHAIN API SERVICE (2 TASKS)
-# ============================================================================
 
 resource "aws_ecs_task_definition" "offchain" {
   family                   = "${var.project_name}-offchain-api"
@@ -509,10 +491,6 @@ resource "aws_service_discovery_service" "offchain" {
   }
 }
 
-# ============================================================================
-# 5. QUEUE WORKER SERVICE
-# ============================================================================
-
 resource "aws_ecs_task_definition" "queue_worker" {
   family                   = "${var.project_name}-queue-worker"
   network_mode             = "awsvpc"
@@ -530,16 +508,35 @@ resource "aws_ecs_task_definition" "queue_worker" {
 
       environment = [
         {
-          name  = "RABBITMQ_URL"
-          value = "amqp://admin:${random_password.rabbitmq_password.result}@${var.project_name}-rabbitmq.${var.project_name}.local:5672"
+          name  = "RABBITMQ_HOST"
+          value = "${var.project_name}-rabbitmq.${var.project_name}.local"
+        },
+        {
+          name  = "RABBITMQ_PORT"
+          value = "5672"
+        },
+        {
+          name  = "RABBITMQ_USER"
+          value = "admin"
         },
         {
           name  = "OFFCHAIN_API_URL"
           value = "http://${aws_lb.internal.dns_name}"
         },
         {
+          name  = "ORCHESTRATOR_URL"
+          value = "http://${var.project_name}-orchestrator.${var.project_name}.local:8081"
+        },
+        {
           name  = "NODE_ENV"
           value = "production"
+        }
+      ]
+
+      secrets = [
+        {
+          name      = "RABBITMQ_PASSWORD"
+          valueFrom = aws_secretsmanager_secret.rabbitmq_password.arn
         }
       ]
 
@@ -586,10 +583,6 @@ resource "aws_ecs_service" "queue_worker" {
     Name = "${var.project_name}-queue-worker-service"
   }
 }
-
-# ============================================================================
-# 6. RABBITMQ SERVICE
-# ============================================================================
 
 resource "aws_ecs_task_definition" "rabbitmq" {
   family                   = "${var.project_name}-rabbitmq"
@@ -696,13 +689,9 @@ resource "aws_service_discovery_service" "rabbitmq" {
   }
 }
 
-# ============================================================================
-# 7. BESU VALIDATOR SERVICES (4 VALIDATORS - 2 per AZ)
-# ============================================================================
-
-# Validator 1 (AZ 1)
-resource "aws_ecs_task_definition" "besu_validator_1" {
-  family                   = "${var.project_name}-besu-validator-1"
+resource "aws_ecs_task_definition" "besu_validator" {
+  for_each                 = toset(["1", "2", "3", "4"])
+  family                   = "${var.project_name}-besu-validator-${each.value}"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = var.besu_cpu
@@ -712,61 +701,39 @@ resource "aws_ecs_task_definition" "besu_validator_1" {
 
   volume {
     name = "besu-data"
-
     efs_volume_configuration {
       file_system_id     = aws_efs_file_system.besu_data.id
       transit_encryption = "ENABLED"
       authorization_config {
-        access_point_id = aws_efs_access_point.besu_validator[0].id
+        access_point_id = aws_efs_access_point.besu_validator[tonumber(each.value) - 1].id
       }
     }
   }
 
   container_definitions = jsonencode([
     {
-      name      = "besu-validator-1"
+      name      = "besu-validator-${each.value}"
       image     = "${aws_ecr_repository.repos["besu-validator"].repository_url}:latest"
       essential = true
-
       portMappings = [
-        {
-          containerPort = 8545
-          protocol      = "tcp"
-        },
-        {
-          containerPort = 30303
-          protocol      = "tcp"
-        },
-        {
-          containerPort = 30303
-          protocol      = "udp"
-        }
+        { containerPort = 8545, protocol = "tcp" },
+        { containerPort = 30303, protocol = "tcp" },
+        { containerPort = 30303, protocol = "udp" }
       ]
-
       environment = [
-        {
-          name  = "BESU_NODE_ID"
-          value = "validator-1"
-        }
+        { name = "BESU_NODE_ID", value = "validator-${each.value}" }
       ]
-
       mountPoints = [
-        {
-          sourceVolume  = "besu-data"
-          containerPath = "/opt/besu/data"
-          readOnly      = false
-        }
+        { sourceVolume = "besu-data", containerPath = "/opt/besu/data", readOnly = false }
       ]
-
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.ecs["besu-validator-1"].name
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs["besu-validator-${each.value}"].name
           "awslogs-region"        = var.aws_region
           "awslogs-stream-prefix" = "ecs"
         }
       }
-
       healthCheck = {
         command     = ["CMD-SHELL", "curl -f http://localhost:8545 -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' || exit 1"]
         interval    = 30
@@ -778,43 +745,44 @@ resource "aws_ecs_task_definition" "besu_validator_1" {
   ])
 
   tags = {
-    Name = "${var.project_name}-besu-validator-1"
+    Name = "${var.project_name}-besu-validator-${each.value}"
   }
 }
 
-resource "aws_ecs_service" "besu_validator_1" {
-  name            = "${var.project_name}-besu-validator-1"
+resource "aws_ecs_service" "besu_validator" {
+  for_each        = toset(["1", "2", "3", "4"])
+  name            = "${var.project_name}-besu-validator-${each.value}"
   cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.besu_validator_1.arn
+  task_definition = aws_ecs_task_definition.besu_validator[each.value].arn
   desired_count   = 1
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = [aws_subnet.private[0].id]  # us-east-1a
+    # Single AZ deployment for cost optimization
+    subnets          = [aws_subnet.private[0].id]
     security_groups  = [aws_security_group.besu.id]
     assign_public_ip = false
   }
 
   service_registries {
-    registry_arn = aws_service_discovery_service.besu_validator_1.arn
+    registry_arn = aws_service_discovery_service.besu_validator[each.value].arn
   }
 
   tags = {
-    Name = "${var.project_name}-besu-validator-1-service"
+    Name = "${var.project_name}-besu-validator-${each.value}-service"
   }
 }
 
-resource "aws_service_discovery_service" "besu_validator_1" {
-  name = "${var.project_name}-besu-validator-1"
+resource "aws_service_discovery_service" "besu_validator" {
+  for_each = toset(["1", "2", "3", "4"])
+  name     = "${var.project_name}-besu-validator-${each.value}"
 
   dns_config {
     namespace_id = aws_service_discovery_private_dns_namespace.main.id
-
     dns_records {
       ttl  = 10
       type = "A"
     }
-
     routing_policy = "MULTIVALUE"
   }
 
@@ -823,371 +791,3 @@ resource "aws_service_discovery_service" "besu_validator_1" {
   }
 }
 
-# Validator 2 (AZ 1)
-resource "aws_ecs_task_definition" "besu_validator_2" {
-  family                   = "${var.project_name}-besu-validator-2"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = var.besu_cpu
-  memory                   = var.besu_memory
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn            = aws_iam_role.ecs_task.arn
-
-  volume {
-    name = "besu-data"
-
-    efs_volume_configuration {
-      file_system_id     = aws_efs_file_system.besu_data.id
-      transit_encryption = "ENABLED"
-      authorization_config {
-        access_point_id = aws_efs_access_point.besu_validator[1].id
-      }
-    }
-  }
-
-  container_definitions = jsonencode([
-    {
-      name      = "besu-validator-2"
-      image     = "${aws_ecr_repository.repos["besu-validator"].repository_url}:latest"
-      essential = true
-
-      portMappings = [
-        {
-          containerPort = 8545
-          protocol      = "tcp"
-        },
-        {
-          containerPort = 30303
-          protocol      = "tcp"
-        },
-        {
-          containerPort = 30303
-          protocol      = "udp"
-        }
-      ]
-
-      environment = [
-        {
-          name  = "BESU_NODE_ID"
-          value = "validator-2"
-        }
-      ]
-
-      mountPoints = [
-        {
-          sourceVolume  = "besu-data"
-          containerPath = "/opt/besu/data"
-          readOnly      = false
-        }
-      ]
-
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.ecs["besu-validator-2"].name
-          "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "ecs"
-        }
-      }
-
-      healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:8545 -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' || exit 1"]
-        interval    = 30
-        timeout     = 5
-        retries     = 5
-        startPeriod = 180
-      }
-    }
-  ])
-
-  tags = {
-    Name = "${var.project_name}-besu-validator-2"
-  }
-}
-
-resource "aws_ecs_service" "besu_validator_2" {
-  name            = "${var.project_name}-besu-validator-2"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.besu_validator_2.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
-
-  network_configuration {
-    subnets          = [aws_subnet.private[0].id]  # us-east-1a
-    security_groups  = [aws_security_group.besu.id]
-    assign_public_ip = false
-  }
-
-  service_registries {
-    registry_arn = aws_service_discovery_service.besu_validator_2.arn
-  }
-
-  tags = {
-    Name = "${var.project_name}-besu-validator-2-service"
-  }
-}
-
-resource "aws_service_discovery_service" "besu_validator_2" {
-  name = "${var.project_name}-besu-validator-2"
-
-  dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.main.id
-
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-
-    routing_policy = "MULTIVALUE"
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
-  }
-}
-
-# Validator 3 (AZ 2)
-resource "aws_ecs_task_definition" "besu_validator_3" {
-  family                   = "${var.project_name}-besu-validator-3"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = var.besu_cpu
-  memory                   = var.besu_memory
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn            = aws_iam_role.ecs_task.arn
-
-  volume {
-    name = "besu-data"
-
-    efs_volume_configuration {
-      file_system_id     = aws_efs_file_system.besu_data.id
-      transit_encryption = "ENABLED"
-      authorization_config {
-        access_point_id = aws_efs_access_point.besu_validator[2].id
-      }
-    }
-  }
-
-  container_definitions = jsonencode([
-    {
-      name      = "besu-validator-3"
-      image     = "${aws_ecr_repository.repos["besu-validator"].repository_url}:latest"
-      essential = true
-
-      portMappings = [
-        {
-          containerPort = 8545
-          protocol      = "tcp"
-        },
-        {
-          containerPort = 30303
-          protocol      = "tcp"
-        },
-        {
-          containerPort = 30303
-          protocol      = "udp"
-        }
-      ]
-
-      environment = [
-        {
-          name  = "BESU_NODE_ID"
-          value = "validator-3"
-        }
-      ]
-
-      mountPoints = [
-        {
-          sourceVolume  = "besu-data"
-          containerPath = "/opt/besu/data"
-          readOnly      = false
-        }
-      ]
-
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.ecs["besu-validator-3"].name
-          "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "ecs"
-        }
-      }
-
-      healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:8545 -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' || exit 1"]
-        interval    = 30
-        timeout     = 5
-        retries     = 5
-        startPeriod = 180
-      }
-    }
-  ])
-
-  tags = {
-    Name = "${var.project_name}-besu-validator-3"
-  }
-}
-
-resource "aws_ecs_service" "besu_validator_3" {
-  name            = "${var.project_name}-besu-validator-3"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.besu_validator_3.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
-
-  network_configuration {
-    subnets          = [aws_subnet.private[1].id]  # us-east-1b
-    security_groups  = [aws_security_group.besu.id]
-    assign_public_ip = false
-  }
-
-  service_registries {
-    registry_arn = aws_service_discovery_service.besu_validator_3.arn
-  }
-
-  tags = {
-    Name = "${var.project_name}-besu-validator-3-service"
-  }
-}
-
-resource "aws_service_discovery_service" "besu_validator_3" {
-  name = "${var.project_name}-besu-validator-3"
-
-  dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.main.id
-
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-
-    routing_policy = "MULTIVALUE"
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
-  }
-}
-
-# Validator 4 (AZ 2)
-resource "aws_ecs_task_definition" "besu_validator_4" {
-  family                   = "${var.project_name}-besu-validator-4"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = var.besu_cpu
-  memory                   = var.besu_memory
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn            = aws_iam_role.ecs_task.arn
-
-  volume {
-    name = "besu-data"
-
-    efs_volume_configuration {
-      file_system_id     = aws_efs_file_system.besu_data.id
-      transit_encryption = "ENABLED"
-      authorization_config {
-        access_point_id = aws_efs_access_point.besu_validator[3].id
-      }
-    }
-  }
-
-  container_definitions = jsonencode([
-    {
-      name      = "besu-validator-4"
-      image     = "${aws_ecr_repository.repos["besu-validator"].repository_url}:latest"
-      essential = true
-
-      portMappings = [
-        {
-          containerPort = 8545
-          protocol      = "tcp"
-        },
-        {
-          containerPort = 30303
-          protocol      = "tcp"
-        },
-        {
-          containerPort = 30303
-          protocol      = "udp"
-        }
-      ]
-
-      environment = [
-        {
-          name  = "BESU_NODE_ID"
-          value = "validator-4"
-        }
-      ]
-
-      mountPoints = [
-        {
-          sourceVolume  = "besu-data"
-          containerPath = "/opt/besu/data"
-          readOnly      = false
-        }
-      ]
-
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.ecs["besu-validator-4"].name
-          "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "ecs"
-        }
-      }
-
-      healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:8545 -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' || exit 1"]
-        interval    = 30
-        timeout     = 5
-        retries     = 5
-        startPeriod = 180
-      }
-    }
-  ])
-
-  tags = {
-    Name = "${var.project_name}-besu-validator-4"
-  }
-}
-
-resource "aws_ecs_service" "besu_validator_4" {
-  name            = "${var.project_name}-besu-validator-4"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.besu_validator_4.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
-
-  network_configuration {
-    subnets          = [aws_subnet.private[1].id]  # us-east-1b
-    security_groups  = [aws_security_group.besu.id]
-    assign_public_ip = false
-  }
-
-  service_registries {
-    registry_arn = aws_service_discovery_service.besu_validator_4.arn
-  }
-
-  tags = {
-    Name = "${var.project_name}-besu-validator-4-service"
-  }
-}
-
-resource "aws_service_discovery_service" "besu_validator_4" {
-  name = "${var.project_name}-besu-validator-4"
-
-  dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.main.id
-
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-
-    routing_policy = "MULTIVALUE"
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
-  }
-}
